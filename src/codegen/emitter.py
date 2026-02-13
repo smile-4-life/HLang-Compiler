@@ -100,7 +100,8 @@ class Emitter:
         Returns:
             Generated JVM instruction string
         """
-        frame.push()
+        if frame is not None:
+            frame.push()
         if type(in_) is int:
             i = in_
             if i >= -1 and i <= 5:
@@ -131,7 +132,8 @@ class Emitter:
             Generated JVM instruction string
         """
         f = float(in_)
-        frame.push()
+        if frame is not None:
+            frame.push()
         rst = "{0:.4f}".format(f)
         if rst == "0.0000" or rst == "1.0000" or rst == "2.0000":
             return self.jvm.emitFCONST(rst[:3])
@@ -154,12 +156,16 @@ class Emitter:
             IllegalOperandException: If type is not supported
         """
         if type(typ) is IntType:
-            return self.emit_push_iconst(in_, frame)
+            return self.emit_push_iconst(int(in_), frame)
         elif type(typ) is StringType:
             frame.push()
             return self.jvm.emitLDC(in_)
+        elif type(typ) is BoolType:
+            return self.emit_push_iconst(1 if in_ == "true" or in_ == 1 else 0, frame)
+        elif type(typ) is FloatType:
+            return self.emit_push_fconst(str(in_), frame)
         else:
-            raise IllegalOperandException(in_)
+            raise IllegalOperandException(str(typ))
 
     def emit_aload(self, in_, frame) -> str:
         """
@@ -175,15 +181,16 @@ class Emitter:
         Raises:
             IllegalOperandException: If type is not supported
         """
-        frame.pop()
-        if type(in_) is IntType:
+        if frame is not None:
+            frame.pop()   # index
+            frame.pop()   # array ref
+            frame.push()  # element result
+        if type(in_) in (IntType, BoolType):
             return self.jvm.emitIALOAD()
-        elif (
-            type(in_) is ArrayType or type(in_) is ClassType or type(in_) is StringType
-        ):
-            return self.jvm.emitAALOAD()
+        elif type(in_) is FloatType:
+            return self.jvm.emitFALOAD()
         else:
-            raise IllegalOperandException(str(in_))
+            return self.jvm.emitAALOAD()
 
     def emit_astore(self, in_, frame) -> str:
         """
@@ -199,17 +206,15 @@ class Emitter:
         Raises:
             IllegalOperandException: If type is not supported
         """
-        frame.pop()
-        frame.pop()
-        frame.pop()
-        if type(in_) is IntType:
+        frame.pop()   # value
+        frame.pop()   # index
+        frame.pop()   # array ref
+        if isinstance(in_, IntType):
             return self.jvm.emitIASTORE()
-        elif (
-            type(in_) is ArrayType or type(in_) is ClassType or type(in_) is StringType
-        ):
-            return self.jvm.emitAASTORE()
+        elif isinstance(in_, FloatType):
+            return self.jvm.emitFASTORE()
         else:
-            raise IllegalOperandException(str(in_))
+            return self.jvm.emitAASTORE()
 
     def emit_var(
         self, in_: int, var_name: str, in_type, from_label: int, to_label: int
@@ -248,7 +253,7 @@ class Emitter:
             IllegalOperandException: If type is not supported
         """
         frame.push()
-        if type(in_type) is IntType:
+        if type(in_type) in (IntType,BoolType):
             return self.jvm.emitILOAD(index)
         elif type(in_type) is FloatType:
             return self.jvm.emitFLOAD(index)
@@ -296,7 +301,7 @@ class Emitter:
         """
         frame.pop()
 
-        if type(in_type) is IntType:
+        if type(in_type) in (IntType,BoolType):
             return self.jvm.emitISTORE(index)
         elif type(in_type) is FloatType:
             return self.jvm.emitFSTORE(index)
@@ -370,7 +375,8 @@ class Emitter:
         Returns:
             Generated JVM instruction string
         """
-        frame.pop()
+        if frame:
+            frame.pop()
         return self.jvm.emitPUTSTATIC(lexeme, self.get_jvm_type(in_))
 
     def emit_get_field(self, lexeme: str, in_, frame) -> str:
@@ -457,8 +463,9 @@ class Emitter:
             Generated JVM instruction string
         """
         typ = in_
-        list(map(lambda x: frame.pop(), typ.partype))
-        frame.pop()
+        list(map(lambda x: frame.pop(), typ.param_types))
+        if frame is not None:
+            frame.pop()
         if not type(typ) is VoidType:
             frame.push()
         return self.jvm.emitINVOKEVIRTUAL(lexeme, self.get_jvm_type(in_))
@@ -513,8 +520,11 @@ class Emitter:
         Returns:
             Generated JVM instruction string
         """
-        frame.pop()
-        if lexeme == "+":
+        frame.pop() 
+        frame.pop() 
+        frame.push() 
+
+        if lexeme == '+':
             if type(in_) is IntType:
                 return self.jvm.emitIADD()
             else:
@@ -537,7 +547,10 @@ class Emitter:
         Returns:
             Generated JVM instruction string
         """
-        frame.pop()
+        frame.pop() 
+        frame.pop()  
+        frame.push() 
+
         if lexeme == "*":
             if type(in_) is IntType:
                 return self.jvm.emitIMUL()
@@ -586,6 +599,8 @@ class Emitter:
             Generated JVM instruction string
         """
         frame.pop()
+        frame.pop()
+        frame.push()
         return self.jvm.emitIAND()
 
     def emit_or_op(self, frame) -> str:
@@ -715,23 +730,23 @@ class Emitter:
             Generated end method directive string
         """
         buffer = list()
-        buffer.append(self.jvm.emitLIMITSTACK(frame.get_max_op_stack_size()))
-        buffer.append(self.jvm.emitLIMITLOCAL(frame.get_max_index()))
+        if(frame):
+            buffer.append(self.jvm.emitLIMITSTACK(frame.get_max_op_stack_size()))
+            buffer.append(self.jvm.emitLIMITLOCAL(frame.get_max_index()))
         buffer.append(self.jvm.emitENDMETHOD())
         return "".join(buffer)
 
     def get_const(self, ast) -> tuple:
-        """
-        Get constant value and type from AST.
-
-        Args:
-            ast: Literal AST node
-
-        Returns:
-            Tuple of (value, type)
-        """
-        if type(ast) is IntLiteral:
+        """Return (lexeme, Type) for a literal node."""
+        if type(ast) is IntegerLiteral:
             return (str(ast.value), IntType())
+        if type(ast) is FloatLiteral:
+            return (str(ast.value), FloatType())
+        if type(ast) is StringLiteral:
+            return ('"' + ast.value + '"', StringType())
+        if type(ast) is BooleanLiteral:
+            return ("1" if ast.value else "0", BoolType())
+        raise IllegalOperandException(f"Unsupported literal: {type(ast)}")
 
     def emit_if_true(self, label: int, frame) -> str:
         """
@@ -745,7 +760,7 @@ class Emitter:
             Generated JVM instruction string
         """
         frame.pop()
-        return self.jvm.emitIFGT(label)
+        return self.jvm.emitIFNE(label)
 
     def emit_if_false(self, label: int, frame) -> str:
         """
@@ -759,7 +774,7 @@ class Emitter:
             Generated JVM instruction string
         """
         frame.pop()
-        return self.jvm.emitIFLE(label)
+        return self.jvm.emitIFEQ(label)
 
     def emit_ificmpgt(self, label: int, frame) -> str:
         """
@@ -841,8 +856,16 @@ class Emitter:
         if type(in_) is IntType or type(in_) is BoolType:
             frame.pop()
             return self.jvm.emitIRETURN()
+        elif type(in_) is FloatType:
+            frame.pop()
+            return self.jvm.emitFRETURN()
+        elif type(in_) is StringType or type(in_) is ArrayType or type(in_) is ClassType:
+            frame.pop()
+            return self.jvm.emitARETURN()
         elif type(in_) is VoidType:
             return self.jvm.emitRETURN()
+        else:
+            raise IllegalOperandException(f"Unsupported return type: {type(in_)}")
 
     def emit_new_array(self, lexeme: str) -> str:
         """
@@ -897,7 +920,7 @@ class Emitter:
         result.append(self.jvm.emitSOURCE(name + ".java"))
         result.append(self.jvm.emitCLASS("public " + name))
         result.append(
-            self.jvm.emitSUPER("java/land/Object" if parent == "" else parent)
+            self.jvm.emitSUPER("java/lang/Object" if parent == "" else parent)
         )
         return "".join(result)
 
@@ -948,3 +971,4 @@ class Emitter:
         Clear the code buffer.
         """
         self.buff.clear()
+
