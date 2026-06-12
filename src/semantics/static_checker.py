@@ -173,17 +173,24 @@ class StaticChecker(ASTVisitor):
 
     # ---------- Program ----------
     def visit_program(self, node: Program, o: Any=None):
-        # Load global consts & vars first
-        for decl in getattr(node, "const_decls", []):
-            self.visit(decl, o)
-            
-        # Predeclare function headers (for mutual recursion)
-        for f in getattr(node, "func_decls", []):
-            self._declare_function_header(f)
+        ordered_decls = getattr(node, "ordered_decls", None)
 
-        # Visit function bodies
-        for func in getattr(node, "func_decls", []):
-            self.visit(func, o)
+        if ordered_decls is not None:
+            for decl in ordered_decls:
+                if isinstance(decl, FuncDecl):
+                    self._declare_function_header(decl)
+            for decl in ordered_decls:
+                if isinstance(decl, ConstDecl):
+                    self.visit(decl, o)
+                elif isinstance(decl, FuncDecl):
+                    self.visit(decl, o)
+        else:
+            for decl in getattr(node, "const_decls", []):
+                self.visit(decl, o)
+            for f in getattr(node, "func_decls", []):
+                self._declare_function_header(f)
+            for func in getattr(node, "func_decls", []):
+                self.visit(func, o)
 
         # Check entry point
         main_sym = self.current_scope.lookup("main")
@@ -512,9 +519,6 @@ class StaticChecker(ASTVisitor):
         it = self.visit(node.index)
         if not isinstance(it, IntType):
             raise TypeMismatchInExpression(node)
-        if node.index.value >= at.size:
-            raise TypeMismatchInExpression(node)
-        
         return at.element_type
 
     def visit_array_literal(self, node: ArrayLiteral, o: Any=None):
