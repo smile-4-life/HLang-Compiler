@@ -4,8 +4,7 @@ import subprocess
 import tempfile
 import shutil
 
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(__file__)), "build"))
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(__file__)), "src"))
+sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 from antlr4 import *
 from build.HLangLexer import HLangLexer
