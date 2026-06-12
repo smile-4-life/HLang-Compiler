@@ -122,14 +122,15 @@ class Emitter:
 
     def emit_push_fconst(self, in_: str, frame) -> str:
         """
-        Emit instruction to push float constant onto operand stack.
+        Emit instruction to push a 32‑bit float constant onto the operand stack.
+        This implementation only supports Java's 32‑bit `float` type.
 
         Args:
-            in_: String representation of float value
-            frame: Frame object for stack management
+            in_: String representation of the float value.
+            frame: Frame object for stack management.
 
         Returns:
-            Generated JVM instruction string
+            Generated JVM instruction string.
         """
         f = float(in_)
         if frame is not None:
@@ -181,16 +182,19 @@ class Emitter:
         Raises:
             IllegalOperandException: If type is not supported
         """
-        if frame is not None:
-            frame.pop()   # index
-            frame.pop()   # array ref
-            frame.push()  # element result
-        if type(in_) in (IntType, BoolType):
-            return self.jvm.emitIALOAD()
+        frame.pop() # Pop index, array reference remains but updated by JVM execution
+        
+        if type(in_) is IntType:
+            return self.jvm.emitIALOAD()       # iaload (integer array load)
         elif type(in_) is FloatType:
-            return self.jvm.emitFALOAD()
+            return self.jvm.emitFALOAD()       # faload (float array load)
+        elif type(in_) is BoolType:
+            return self.jvm.emitBALOAD()       # baload (boolean/byte array load)
+        elif type(in_) is StringType or type(in_) is ArrayType or type(in_) is ClassType:
+            return self.jvm.emitAALOAD()       # aaload (reference/object array load)
         else:
-            return self.jvm.emitAALOAD()
+            raise IllegalOperandException(str(in_))
+
 
     def emit_astore(self, in_, frame) -> str:
         """
@@ -209,12 +213,17 @@ class Emitter:
         frame.pop()   # value
         frame.pop()   # index
         frame.pop()   # array ref
+        
         if isinstance(in_, IntType):
-            return self.jvm.emitIASTORE()
+            return self.jvm.emitIASTORE()      # iastore (integer array store)
         elif isinstance(in_, FloatType):
-            return self.jvm.emitFASTORE()
+            return self.jvm.emitFASTORE()      # fastore (float array store)
+        elif isinstance(in_, BoolType):
+            return self.jvm.emitBASTORE()      # bastore (boolean/byte array store) 
+        elif isinstance(in_, StringType) or isinstance(in_, ArrayType) or isinstance(in_, ClassType):
+            return self.jvm.emitAASTORE()      # aastore (reference/object array store)
         else:
-            return self.jvm.emitAASTORE()
+            raise IllegalOperandException(str(in_))
 
     def emit_var(
         self, in_: int, var_name: str, in_type, from_label: int, to_label: int
@@ -521,8 +530,8 @@ class Emitter:
             Generated JVM instruction string
         """
         frame.pop() 
-        frame.pop() 
-        frame.push() 
+        #frame.pop() 
+        #frame.push() 
 
         if lexeme == '+':
             if type(in_) is IntType:
@@ -548,8 +557,8 @@ class Emitter:
             Generated JVM instruction string
         """
         frame.pop() 
-        frame.pop()  
-        frame.push() 
+        #frame.pop()  
+        #frame.push() 
 
         if lexeme == "*":
             if type(in_) is IntType:
@@ -599,8 +608,8 @@ class Emitter:
             Generated JVM instruction string
         """
         frame.pop()
-        frame.pop()
-        frame.push()
+        #frame.pop()
+        #frame.push()
         return self.jvm.emitIAND()
 
     def emit_or_op(self, frame) -> str:
@@ -634,7 +643,7 @@ class Emitter:
 
         frame.pop()
         frame.pop()
-        if type(in_) is IntType:
+        if isinstance(in_, (IntType, BoolType)):
             if op == ">":
                 result.append(self.jvm.emitIFICMPLE(label_f))
             elif op == ">=":
@@ -643,10 +652,10 @@ class Emitter:
                 result.append(self.jvm.emitIFICMPGE(label_f))
             elif op == "<=":
                 result.append(self.jvm.emitIFICMPGT(label_f))
+            elif op == "==":
+                result.append(self.jvm.emitIFICMPNE(label_f))
             elif op == "!=":
                 result.append(self.jvm.emitIFICMPEQ(label_f))
-            else:
-                result.append(self.jvm.emitIFICMPNE(label_f))
         else:
             result.append(self.jvm.emitFCMPL())
             if op == ">":
@@ -659,8 +668,9 @@ class Emitter:
                 result.append(self.jvm.emitIFGT(label_f))
             elif op == "!=":
                 result.append(self.jvm.emitIFEQ(label_f))
-            else:
+            else:  # "=="
                 result.append(self.jvm.emitIFNE(label_f))
+        # Push boolean result (1 for true, 0 for false)
         result.append(self.emit_push_const("1", IntType(), frame))
         frame.push()
         result.append(self.emit_goto(label_o, frame))
@@ -972,3 +982,48 @@ class Emitter:
         """
         self.buff.clear()
 
+    def emit_iload(self, index: int, frame: Frame) -> str:
+        """
+        Emit ILOAD instruction to load an integer from a local variable onto the stack.
+
+        Args:
+            index: The local variable index
+            frame: The current Frame object
+
+        Returns:
+            Generated ILOAD instruction string
+        """
+        if frame:
+            frame.push()
+        return self.jvm.emitILOAD(index)
+
+    def emit_iadd(self, frame: Frame) -> str:
+        """
+        Emit IADD instruction to pop two integers from the stack, add them, 
+        and push the result back onto the stack.
+
+        Args:
+            frame: The current Frame object
+
+        Returns:
+            Generated IADD instruction string
+        """
+        if frame:
+            frame.pop()
+        return self.jvm.emitIADD()
+
+    def emit_istore(self, index: int, frame: Frame) -> str:
+        """
+        Emit ISTORE instruction to pop an integer from the stack and store it 
+        into a local variable.
+
+        Args:
+            index: The local variable index
+            frame: The current Frame object
+
+        Returns:
+            Generated ISTORE instruction string
+        """
+        if frame:
+            frame.pop()
+        return self.jvm.emitISTORE(index)
