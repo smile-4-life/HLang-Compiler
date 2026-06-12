@@ -432,10 +432,24 @@ class BinaryOp(Expr):
     """Binary operation expression."""
 
     def __init__(self, left: Expr, operator: str, right: Expr):
+        """Initialize a BinaryOp.
+        Supports two signatures for compatibility:
+        - BinaryOp(left, operator, right)  # original
+        - BinaryOp(operator, left, right)  # used in tests
+        """
+        # Detect if first argument is a string (operator-first style)
+        # Detect operator-first style: first arg is string and second is Expr
+        if isinstance(left, str) and isinstance(operator, Expr):
+            # Shift arguments: left is operator, operator is left operand
+            self.operator = left
+            self.left = operator
+            self.right = right
+        else:
+            self.left = left
+            self.operator = operator
+            self.right = right
         super().__init__()
-        self.left = left
-        self.operator = operator  # '+', '-', '*', '/', '%', '==', '!=', '<', '<=', '>', '>=', '&&', '||', '>>'
-        self.right = right
+
 
     def accept(self, visitor, o=None):
         return visitor.visit_binary_op(self, o)
@@ -444,6 +458,7 @@ class BinaryOp(Expr):
         return f"BinaryOp({self.left}, {self.operator}, {self.right})"
 
 
+BinOp = BinaryOp  # Alias for compatibility
 class UnaryOp(Expr):
     """Unary operation expression."""
 
