@@ -8,7 +8,9 @@ A comprehensive compiler implementation for HLang, a simple programming language
 
 ## Overview
 
-This is a mini project for the **Principle of Programming Languages course (CO3005)** at Ho Chi Minh City University of Technology (VNU-HCM) that implements a compiler for **HLang**, a custom programming language designed for educational purposes.
+This is a project for the **Principle of Programming Languages course (CO3005)** at Ho Chi Minh City University of Technology (VNU-HCM) that implements a compiler for **HLang**, a custom programming language designed for educational purposes.
+
+This compiler can transform high-level HLang source code into JVM bytecode and deliver immediate runtime outputs.
 
 📋 **For detailed language specification, see [HLang Specification](hlang_specification.md)**
 
@@ -18,12 +20,42 @@ The project demonstrates fundamental concepts of compiler construction including
 - **Error Handling**: Comprehensive error reporting for both lexical and syntactic errors
 - **Testing Framework**: Automated testing with HTML report generation
 
-## Assignment 1 - Tokenizer and recognizer
+## Architecture Overview
+The compiler was developed through four primary technical stages, executing a full transformation from HLang source code to JVM bytecode.
 
+The HLang compiler follows a traditional compiler architecture:
+
+```
+Source Code (.hlang) 
+    ↓
+Lexical Analysis (HLangLexer) ← Phase 1
+    ↓  
+Token Stream
+    ↓
+Syntax Analysis (HLangParser) ← Phase 1
+    ↓
+Parse Tree
+    ↓
+AST Generation (ASTGeneration) ← Phase 2
+    ↓
+Abstract Syntax Tree (AST)
+    ↓
+Semantic Analysis (StaticChecker) ← Phase 3
+    ↓
+Semantically Validated AST
+    ↓
+Code Generation (CodeGenerator) ← Phase 4
+    ↓
+Jasmin Assembly Code (.j)
+    ↓
+JVM Bytecode (.class)
+```
+
+## Phase 1: Lexical Analysis and Syntax Analysis
 ### Required Tasks to Complete
 
 1. **Read the language specification carefully**
-   - Study the detailed [HLang Specification](hlang_specification.md) document
+   - Study the detailed hlang_specification.md document
    - Understand the syntax and semantics of the HLang language
    - Master the lexical and syntax rules
 
@@ -33,12 +65,12 @@ The project demonstrates fundamental concepts of compiler construction including
    - Define parser rules (grammar rules)
    - Handle precedence and associativity
 
-3. **Write 100 lexer tests and 100 parser tests**
-   - **100 test cases for lexer** in `tests/test_lexer.py`
+3. **Write testcase**
+   - **Test cases for lexer** in `tests/test_lexer.py`
      - Test valid and invalid tokens
      - Test error handling (unclosed strings, illegal escape sequences, etc.)
      - Test edge cases and boundary conditions
-   - **100 test cases for parser** in `tests/test_parser.py`
+   - **Test cases for parser** in `tests/test_parser.py`
      - Test valid grammar structures
      - Test syntax errors and error recovery
      - Test nested structures and complex expressions
@@ -59,7 +91,7 @@ For lexical errors, the lexer must return the following tokens with specific lex
 - **Test Coverage**: Quantity and quality of test cases (200 tests total)
 - **Error Handling**: Capability to handle lexical and syntax errors
 
-## Assignment 2 - AST Generation
+## Phase 2: AST Generation
 
 ### Required Tasks to Complete
 
@@ -74,8 +106,8 @@ For lexical errors, the lexer must return the following tokens with specific lex
    - Override visitor methods to construct appropriate AST nodes
    - Handle all language constructs defined in the HLang specification
 
-3. **Write 100 AST Generation Test Cases**
-   - Implement **100 test cases** in `tests/test_ast_gen.py`
+3. **Write AST Generation Test Cases**
+   - Implement **test cases** in `tests/test_ast_gen.py`
    - Test AST generation for all language features
    - Verify correct node types and structure
    - Test edge cases and complex nested structures
@@ -88,14 +120,14 @@ The `ASTGeneration` class must:
 - **Handle all constructs**: Support all language features defined in the grammar
 - **Maintain structure**: Preserve the logical structure and relationships between language elements
 
-### Evaluation Criteria
+###    Evaluation Criteria
 
 - **AST Implementation**: Correctness and completeness of the `ASTGeneration` class
 - **Node Usage**: Proper utilization of node classes from `nodes.py`
-- **Test Coverage**: Quality and comprehensiveness of 100 AST generation test cases
+- **Test Coverage**: Quality and comprehensiveness of AST generation test cases
 - **Structure Accuracy**: AST must correctly represent the source program structure
 
-## Assignment 3 - Static Semantic Analysis
+## Phase 3: Static Semantic Analysis
 
 ### Required Tasks to Complete
 
@@ -110,8 +142,8 @@ The `ASTGeneration` class must:
    - Implement comprehensive semantic analysis for all language features
    - Handle scope management, type checking, and error detection
 
-3. **Write 100 Static Checker Test Cases**
-   - Implement **100 test cases** in `tests/test_checker.py`
+3. **Write Static Checker Test Cases**
+   - Implement **test cases** in `tests/test_checker.py`
    - Test all semantic error types and valid programs
    - Cover edge cases and complex semantic scenarios
    - Verify correct error messages and program validation
@@ -124,9 +156,58 @@ The `ASTGeneration` class must:
 
 - **Semantic Analysis**: Correctness and completeness of the `StaticChecker` implementation
 - **Error Detection**: Accurate identification of all required error types
-- **Test Coverage**: Quality and comprehensiveness of 100 semantic checker test cases
+- **Test Coverage**: Quality and comprehensiveness of semantic checker test cases
 - **Type System**: Proper implementation of HLang's static type system
 - **Scope Management**: Correct handling of variable and function scope rules
+
+## Phase 4: Jasmin Code Generation
+
+### Required Tasks to Complete
+
+1. **Study the Code Generation Framework**
+   - Understand the existing code structure in `src/codegen/` directory
+   - Study the Jasmin bytecode format and JVM instruction set
+   - Master the relationship between AST nodes and JVM bytecode instructions
+
+2. **Implement Code Generation Classes**
+   - Complete the `CodeGenerator` class in `src/codegen/codegen.py`
+   - Enhance the `Emitter` class in `src/codegen/emitter.py`
+   - Generate correct Jasmin assembly code for all HLang language features
+   - Handle proper stack management and local variable allocation
+
+3. **Write Code Generation Test Cases**
+   - Implement **test cases** in `tests/test_codegen.py`
+   - Test code generation for all language constructs
+   - Verify correct bytecode output and program execution
+   - Cover edge cases and complex nested structures
+
+### Code Generation Requirements
+
+The code generation system must:
+- **Target JVM Platform**: Generate Jasmin assembly code that compiles to Java bytecode
+- **Complete Implementation**: Only modify `codegen.py` and `emitter.py` files
+- **AST Traversal**: Use the visitor pattern to traverse AST nodes and emit instructions
+- **Stack Management**: Properly manage the JVM operand stack for all operations
+- **Type Handling**: Generate appropriate instructions for different data types
+- **Runtime Support**: Utilize the provided runtime classes (`io.class`, `HLang.class`)
+
+### Jasmin Code Generation Features
+
+The implementation must support:
+- **Variable Declarations**: Local variables with proper scope management
+- **Expressions**: Arithmetic, logical, and relational operations
+- **Control Flow**: If statements, loops (while, for), and function calls
+- **Arrays**: Array creation, access, and modification
+- **Functions**: Function definitions, calls, and return statements
+- **Built-in Functions**: Integration with I/O operations through runtime
+
+## Evaluation Criteria
+
+- **Code Generation**: Correctness and completeness of the `CodeGenerator` and `Emitter` implementations
+- **Bytecode Quality**: Generated Jasmin code must be syntactically correct and executable
+- **Test Coverage**: Quality and comprehensiveness of code generation test cases
+- **Runtime Integration**: Proper utilization of the provided runtime environment
+- **Performance**: Efficient bytecode generation with optimal stack usage
 
 ---
 
@@ -152,11 +233,26 @@ The `ASTGeneration` class must:
 │   ├── lexer/            # Lexer test reports with coverage
 │   ├── parser/           # Parser test reports with coverage
 │   ├── ast/              # AST generation test reports with coverage
-│   └── checker/          # Semantic checker test reports with coverage
+│   ├── checker/          # Semantic checker test reports with coverage
+│   └── codegen/          # Code generation test reports with coverage
 ├── src/                  # Source code
 │   ├── astgen/           # AST generation module
 │   │   ├── __init__.py   # Package initialization
 │   │   └── ast_generation.py # ASTGeneration class implementation
+│   ├── codegen/          # Code generation module
+│   │   ├── __init__.py   # Package initialization
+│   │   ├── codegen.py    # CodeGenerator class implementation
+│   │   ├── emitter.py    # Emitter class for JVM bytecode generation
+│   │   ├── error.py      # Code generation error definitions
+│   │   ├── frame.py      # Stack frame management
+│   │   ├── io.py         # I/O symbol definitions
+│   │   ├── jasmin_code.py # Jasmin instruction generation
+│   │   └── utils.py      # Code generation utilities
+│   ├── runtime/          # Runtime environment
+│   │   ├── HLang.class   # Main runtime class (compiled)
+│   │   ├── HLang.j       # Jasmin source for main class
+│   │   ├── io.class      # I/O runtime class (compiled)
+│   │   └── jasmin.jar    # Jasmin assembler
 │   ├── semantics/        # Semantic analysis module
 │   │   ├── __init__.py   # Package initialization
 │   │   ├── static_checker.py # StaticChecker class implementation
@@ -171,6 +267,7 @@ The `ASTGeneration` class must:
 └── tests/                # Comprehensive test suite
     ├── test_ast_gen.py   # AST generation tests
     ├── test_checker.py   # Semantic analysis tests
+    ├── test_codegen.py   # Code generation tests
     ├── test_lexer.py     # Lexer functionality tests
     ├── test_parser.py    # Parser functionality tests
     └── utils.py          # Testing utilities and helper classes
@@ -304,6 +401,7 @@ python3 run.py clean       # Clean build files
 - `make test-parser` or `python run.py test-parser` (Windows) / `python3 run.py test-parser` (macOS/Linux) - Run parser tests with HTML report generation
 - `make test-ast` or `python run.py test-ast` (Windows) / `python3 run.py test-ast` (macOS/Linux) - Run AST generation tests with HTML report generation
 - `make test-checker` or `python run.py test-checker` (Windows) / `python3 run.py test-checker` (macOS/Linux) - Run semantic checker tests with HTML report generation
+- `make test-codegen` or `python run.py test-codegen` (Windows) / `python3 run.py test-codegen` (macOS/Linux) - Run code generation tests with HTML report generation
 
 #### Maintenance Commands
 - `make clean` or `python run.py clean` (Windows) / `python3 run.py clean` (macOS/Linux) - Remove build directories
@@ -326,6 +424,7 @@ The project includes a comprehensive testing framework with:
 - `tests/test_parser.py` - Syntax analysis tests
 - `tests/test_ast_gen.py` - AST generation tests
 - `tests/test_checker.py` - Semantic analysis tests
+- `tests/test_codegen.py` - Code generation tests
 - `tests/utils.py` - Testing utilities and helper classes
 
 ### Running Tests
@@ -366,24 +465,35 @@ python run.py test-checker
 # macOS/Linux:
 python3 run.py test-checker
 
+# Run code generation tests
+make test-codegen
+# OR
+# Windows:
+python run.py test-codegen
+# macOS/Linux:
+python3 run.py test-codegen
+
 # View reports
 # Windows:
 start reports/lexer/index.html
 start reports/parser/index.html
 start reports/ast/index.html
 start reports/checker/index.html
+start reports/codegen/index.html
 
 # macOS:
 open reports/lexer/index.html
 open reports/parser/index.html
 open reports/ast/index.html
 open reports/checker/index.html
+open reports/codegen/index.html
 
 # Linux:
 xdg-open reports/lexer/index.html
 xdg-open reports/parser/index.html
 xdg-open reports/ast/index.html
 xdg-open reports/checker/index.html
+xdg-open reports/codegen/index.html
 ```
 
 ### Test Report Features
@@ -392,106 +502,6 @@ xdg-open reports/checker/index.html
 - ✅ **Error Messages** with stack traces
 - ✅ **Code Coverage** analysis
 - ✅ **HTML Export** for easy sharing
-
-## Development Guide
-
-### Architecture Overview
-
-The HLang compiler follows a traditional compiler architecture:
-
-```
-Source Code (.hlang) 
-    ↓
-Lexical Analysis (HLangLexer)
-    ↓  
-Token Stream
-    ↓
-Syntax Analysis (HLangParser)
-    ↓
-Parse Tree
-    ↓
-AST Generation (ASTGeneration) ← Assignment 2
-    ↓
-Abstract Syntax Tree (AST)
-    ↓
-Semantic Analysis (StaticChecker) ← Assignment 3
-    ↓
-Semantically Validated AST
-    ↓
-[Future: Code Generation]
-```
-
-### Extending the Grammar
-
-To add new language features:
-
-1. **Modify the grammar** in `src/grammar/HLang.g4`:
-   ```antlr
-   // Add new rule
-   assignment: ID '=' exp ';' ;
-   
-   // Add new token
-   ASSIGN: '=' ;
-   ```
-
-2. **Rebuild the parser**:
-   ```bash
-   # Activate virtual environment first
-   source venv/bin/activate  # macOS/Linux
-   # venv\Scripts\activate   # Windows
-   
-   make build
-   # OR
-   # Windows:
-   python run.py build
-   # macOS/Linux:
-   python3 run.py build
-   ```
-
-3. **Add test cases** in `tests/`:
-   ```python
-   def test_assignment():
-       source = "x = 42;"
-       expected = "success"
-       assert Parser(source).parse() == expected
-   ```
-
-4. **Run tests** to verify:
-   ```bash
-   # Activate virtual environment first
-   source venv/bin/activate  # macOS/Linux
-   # venv\Scripts\activate   # Windows
-   
-   make test-parser
-   # OR
-   # Windows:
-   python run.py test-parser
-   # macOS/Linux:
-   python3 run.py test-parser
-   ```
-
-### Adding New Test Cases
-
-#### Lexer Tests (`tests/test_lexer.py`)
-```python
-def test_new_feature():
-    source = "your_test_input"
-    expected = "expected,tokens,EOF"
-    assert Tokenizer(source).get_tokens_as_string() == expected
-```
-
-#### Parser Tests (`tests/test_parser.py`)  
-```python
-def test_new_syntax():
-    source = """your test program"""
-    expected = "success"  # or specific error message
-    assert Parser(source).parse() == expected
-```
-
-### File Naming Convention
-- Test functions must start with `test_`
-- Use descriptive names: `test_variable_declaration()`, `test_function_call()`
-- Number tests sequentially: `test_001()`, `test_002()`, etc.
 
 ## Dependencies
 
